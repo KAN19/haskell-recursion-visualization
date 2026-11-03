@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recursive Data Structures Visualizer</title>
+  <style>
+    :root {
+      --bg-page: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f1f5f9;
+      --bg-code: #f8fafc;
+      --border-color: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --text-main: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+
+      --accent-primary: #4f46e5;
+      --accent-primary-soft: #eef2ff;
+      --accent-cyan: #0284c7;
+      --accent-cyan-soft: #e0f2fe;
+      --accent-amber: #d97706;
+      --accent-amber-soft: #fef3c7;
+      --accent-emerald: #059669;
+      --accent-emerald-soft: #d1fae5;
+      --accent-rose: #e11d48;
+      --accent-rose-soft: #ffe4e6;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", Menlo, Consolas, monospace;
+      --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Clean Top Bar with Selection Box */
+    header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+    }
+
+    .selector-group {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .selector-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    select,
+    input[type="text"] {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 0.86rem;
+      padding: 0.45rem 0.75rem;
+      border-radius: 7px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    select {
+      font-family: var(--font-sans);
+      font-weight: 600;
+      cursor: pointer;
+      padding-right: 1.75rem;
+    }
+
+    select:focus,
+    input[type="text"]:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+    }
+
+    /* Main Split Screen: Code on Left, Visualization on Right */
+    main {
+      max-width: 1480px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.25rem 1.5rem;
+      flex: 1;
+    }
+
+    .module-panel {
+      display: none;
+    }
+
+    .module-panel.active {
+      display: block;
+    }
+
+    .split-layout {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 1.35rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1060px) {
+      .split-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.15rem 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card + .card {
+      margin-top: 1rem;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .card-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      font-weight: 600;
+      padding: 0.18rem 0.55rem;
+      border-radius: 999px;
+      background: var(--accent-primary-soft);
+      color: var(--accent-primary);
+    }
+
+    /* Code Block & Syntax Highlighting */
+    pre.code-block {
+      background: var(--bg-code);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.9rem 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      line-height: 1.65;
+      overflow-x: auto;
+      color: var(--text-main);
+      white-space: normal;
+    }
+
+    .kw { color: #7c3aed; font-weight: 700; }
+    .ty { color: #0284c7; font-weight: 700; }
+    .fn { color: #2563eb; font-weight: 600; }
+    .op { color: #db2777; font-weight: 600; }
+    .num { color: #d97706; font-weight: 600; }
+    .cm { color: #64748b; font-style: italic; }
+
+    .hl-line {
+      display: block;
+      white-space: pre;
+      margin: 0 -1rem;
+      padding: 0.08rem 1rem;
+      border-left: 3px solid transparent;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .code-spacer {
+      height: 0.65rem;
+    }
+
+    .hl-line.active-step {
+      background: var(--accent-amber-soft);
+      border-left-color: var(--accent-amber);
+    }
+
+    .hl-line.done-step {
+      background: var(--accent-emerald-soft);
+      border-left-color: var(--accent-emerald);
+    }
+
+    /* Controls Toolbar on Right Panel */
+    .toolbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding-bottom: 0.9rem;
+      margin-bottom: 0.9rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .toolbar-inputs {
+      display: flex;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .field-group label {
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .btn {
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border: 1px solid var(--border-strong);
+      padding: 0.46rem 0.85rem;
+      border-radius: 7px;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 0.84rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--bg-subtle);
+      border-color: #94a3b8;
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #4338ca;
+      border-color: #4338ca;
+    }
+
+    .btn-sm {
+      padding: 0.36rem 0.65rem;
+      font-size: 0.78rem;
+    }
+
+    /* Step-by-Step Navigation Bar */
+    .stepper-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      padding: 0.55rem 0.85rem;
+      border-radius: 8px;
+      margin-bottom: 0.9rem;
+    }
+
+    .stepper-controls {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+    }
+
+    .step-status-text {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-main);
+      flex: 1;
+    }
+
+    .step-counter {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--accent-primary);
+      background: var(--accent-primary-soft);
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+    }
+
+    /* GHCi Output Box */
+    .ghci-box {
+      background: var(--bg-code);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.7rem 0.95rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      margin-top: 0.85rem;
+    }
+
+    .ghci-prompt {
+      color: var(--accent-primary);
+      font-weight: 700;
+      user-select: none;
+    }
+
+    .ghci-output {
+      color: var(--accent-emerald);
+      font-weight: 600;
+      margin-top: 0.25rem;
+      word-break: break-word;
+    }
+
+    /* =====================================================
+       BST SVG STYLES
+    ====================================================== */
+    .svg-box {
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: radial-gradient(circle at center, #ffffff 0%, #f8fafc 100%);
+      overflow: hidden;
+    }
+
+    #bst-svg {
+      width: 100%;
+      height: 390px;
+      display: block;
+    }
+
+    .tree-edge {
+      stroke: #cbd5e1;
+      stroke-width: 2.2;
+      transition: stroke 0.25s ease, stroke-width 0.25s ease;
+    }
+
+    .tree-edge.edge-active {
+      stroke: var(--accent-amber);
+      stroke-width: 3.5;
+    }
+
+    .tree-edge.edge-found {
+      stroke: var(--accent-emerald);
+      stroke-width: 3.5;
+    }
+
+    .tree-node-group {
+      cursor: pointer;
+    }
+
+    .tree-node-circle {
+      fill: #ffffff;
+      stroke: var(--accent-primary);
+      stroke-width: 2.5;
+      transition: all 0.25s ease;
+    }
+
+    .tree-node-group.node-visiting .tree-node-circle {
+      fill: var(--accent-amber-soft);
+      stroke: var(--accent-amber);
+      stroke-width: 3.5;
+    }
+
+    .tree-node-group.node-found .tree-node-circle {
+      fill: var(--accent-emerald-soft);
+      stroke: var(--accent-emerald);
+      stroke-width: 3.5;
+    }
+
+    .tree-node-group.node-new .tree-node-circle {
+      fill: var(--accent-cyan-soft);
+      stroke: var(--accent-cyan);
+      stroke-width: 3.5;
+    }
+
+    .tree-node-text {
+      fill: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      text-anchor: middle;
+      dominant-baseline: central;
+      pointer-events: none;
+    }
+
+    .tree-empty-rect {
+      fill: #f8fafc;
+      stroke: #94a3b8;
+      stroke-width: 1.5;
+      stroke-dasharray: 3 3;
+      rx: 5;
+    }
+
+    .tree-node-group.node-visiting .tree-empty-rect {
+      fill: var(--accent-amber-soft);
+      stroke: var(--accent-amber);
+      stroke-dasharray: none;
+      stroke-width: 2.5;
+    }
+
+    .tree-node-group.node-notfound .tree-empty-rect {
+      fill: var(--accent-rose-soft);
+      stroke: var(--accent-rose);
+      stroke-dasharray: none;
+      stroke-width: 2.5;
+    }
+
+    .tree-empty-text {
+      fill: #64748b;
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 600;
+      text-anchor: middle;
+      dominant-baseline: central;
+      pointer-events: none;
+    }
+
+    /* =====================================================
+       CUSTOM LIST (:-: & .++) VISUAL STYLES
+    ====================================================== */
+    .list-stage {
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1.1rem;
+      background: radial-gradient(circle at center, #ffffff 0%, #f8fafc 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .list-row-label {
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .cons-chain {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      min-height: 48px;
+      padding: 0.65rem 0.85rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+
+    .cons-cell {
+      display: inline-flex;
+      align-items: center;
+      border: 2px solid var(--accent-primary);
+      background: var(--accent-primary-soft);
+      border-radius: 7px;
+      overflow: hidden;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+
+    .cons-cell.cell-right-list {
+      border-color: var(--accent-cyan);
+      background: var(--accent-cyan-soft);
+    }
+
+    .cons-cell.cell-active {
+      border-color: var(--accent-amber);
+      background: var(--accent-amber-soft);
+      transform: translateY(-2px);
+      box-shadow: 0 3px 8px rgba(217, 119, 6, 0.18);
+    }
+
+    .cons-cell.cell-resolved {
+      border-color: var(--accent-emerald);
+      background: var(--accent-emerald-soft);
+    }
+
+    .cons-val {
+      padding: 0.28rem 0.6rem;
+      color: var(--text-main);
+    }
+
+    .cons-op {
+      padding: 0.28rem 0.42rem;
+      background: rgba(255, 255, 255, 0.7);
+      border-left: 1px solid rgba(15, 23, 42, 0.1);
+      color: #db2777;
+      font-size: 0.78rem;
+    }
+
+    .cons-arrow {
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 0.84rem;
+    }
+
+    .empty-node {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.28rem 0.6rem;
+      border: 1.5px dashed #94a3b8;
+      background: var(--bg-subtle);
+      color: var(--text-secondary);
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .empty-node.empty-active {
+      border-style: solid;
+      border-color: var(--accent-amber);
+      background: var(--accent-amber-soft);
+      color: #92400e;
+    }
+
+    .unexpressed-box {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.3rem 0.7rem;
+      border: 2px dashed var(--accent-amber);
+      background: var(--accent-amber-soft);
+      color: #92400e;
+      border-radius: 7px;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .trace-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .trace-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.45rem 0.7rem;
+      border-radius: 6px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-color);
+      font-family: var(--font-mono);
+      font-size: 0.79rem;
+      cursor: pointer;
+    }
+
+    .trace-row.current {
+      background: var(--accent-amber-soft);
+      border-color: var(--accent-amber);
+      font-weight: 700;
+    }
+
+    .trace-row.completed {
+      background: var(--accent-emerald-soft);
+      border-color: var(--accent-emerald);
+    }
+
+    .trace-badge {
+      font-size: 0.69rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Clean Header with Clear Title and Selection Box -->
+  <header>
+    <h1 class="header-title" id="page-title">Binary Search Tree (Tree a)</h1>
+
+    <div class="selector-group">
+      <label for="module-select">Data Structure:</label>
+      <select id="module-select" onchange="switchModule(this.value)">
+        <option value="bst">Binary Search Tree (Tree a)</option>
+        <option value="list">Custom Recursive List (List a)</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===================================================================
+         MODULE 1: BINARY SEARCH TREE (Code on Left, Visualization on Right)
+    ==================================================================== -->
+    <section class="module-panel active" id="panel-bst">
+      <div class="split-layout">
+        <!-- LEFT COLUMN: Haskell Code Always Fully Visible -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title" id="bst-code-title">Haskell Code — treeInsert</div>
+            <span class="badge" id="bst-type-badge">Ord Int</span>
+          </div>
+          <pre class="code-block">
+<span class="hl-line"><span class="kw">data</span> <span class="ty">Tree</span> a <span class="op">=</span> <span class="ty">EmptyTree</span> <span class="op">|</span> <span class="ty">Node</span> a (<span class="ty">Tree</span> a) (<span class="ty">Tree</span> a)</span>
+<span class="hl-line">  <span class="kw">deriving</span> (<span class="ty">Show</span>, <span class="ty">Read</span>, <span class="ty">Eq</span>)</span>
+<div class="code-spacer"></div>
+<div id="bst-code-insert-group">
+<span class="hl-line" id="bst-ln-singleton"><span class="fn">singleton</span> <span class="op">::</span> a <span class="op">-&gt;</span> <span class="ty">Tree</span> a</span>
+<span class="hl-line" id="bst-ln-singleton-body"><span class="fn">singleton</span> x <span class="op">=</span> <span class="ty">Node</span> x <span class="ty">EmptyTree</span> <span class="ty">EmptyTree</span></span>
+<div class="code-spacer"></div>
+<span class="hl-line" id="bst-ln-ins-sig"><span class="fn">treeInsert</span> <span class="op">::</span> (<span class="ty">Ord</span> a) <span class="op">=&gt;</span> a <span class="op">-&gt;</span> <span class="ty">Tree</span> a <span class="op">-&gt;</span> <span class="ty">Tree</span> a</span>
+<span class="hl-line" id="bst-ln-ins-empty"><span class="fn">treeInsert</span> x <span class="ty">EmptyTree</span> <span class="op">=</span> <span class="fn">singleton</span> x</span>
+<span class="hl-line" id="bst-ln-ins-node"><span class="fn">treeInsert</span> x (<span class="ty">Node</span> a left right)</span>
+<span class="hl-line" id="bst-ln-ins-eq">  <span class="op">|</span> x <span class="op">==</span> a <span class="op">=</span> <span class="ty">Node</span> x left right</span>
+<span class="hl-line" id="bst-ln-ins-lt">  <span class="op">|</span> x <span class="op">&lt;</span> a  <span class="op">=</span> <span class="ty">Node</span> a (<span class="fn">treeInsert</span> x left) right</span>
+<span class="hl-line" id="bst-ln-ins-gt">  <span class="op">|</span> x <span class="op">&gt;</span> a  <span class="op">=</span> <span class="ty">Node</span> a left (<span class="fn">treeInsert</span> x right)</span>
+</div>
+<div id="bst-code-elem-group" style="display: none;">
+<span class="hl-line" id="bst-ln-elem-sig"><span class="fn">treeElem</span> <span class="op">::</span> (<span class="ty">Ord</span> a) <span class="op">=&gt;</span> a <span class="op">-&gt;</span> <span class="ty">Tree</span> a <span class="op">-&gt;</span> <span class="ty">Bool</span></span>
+<span class="hl-line" id="bst-ln-elem-empty"><span class="fn">treeElem</span> x <span class="ty">EmptyTree</span> <span class="op">=</span> <span class="ty">False</span></span>
+<span class="hl-line" id="bst-ln-elem-node"><span class="fn">treeElem</span> x (<span class="ty">Node</span> a left right)</span>
+<span class="hl-line" id="bst-ln-elem-eq">  <span class="op">|</span> x <span class="op">==</span> a <span class="op">=</span> <span class="ty">True</span></span>
+<span class="hl-line" id="bst-ln-elem-lt">  <span class="op">|</span> x <span class="op">&lt;</span> a  <span class="op">=</span> <span class="fn">treeElem</span> x left</span>
+<span class="hl-line" id="bst-ln-elem-gt">  <span class="op">|</span> x <span class="op">&gt;</span> a  <span class="op">=</span> <span class="fn">treeElem</span> x right</span>
+</div>
+          </pre>
+        </div>
+
+        <!-- RIGHT COLUMN: Controls, Step-by-Step Bar, and Tree Visualization -->
+        <div class="card">
+          <div class="toolbar">
+            <div class="toolbar-inputs">
+              <div class="field-group">
+                <label for="bst-fn-select">Function</label>
+                <select id="bst-fn-select" onchange="updateBSTFunctionView()">
+                  <option value="insert">treeInsert (Insert)</option>
+                  <option value="elem">treeElem (Search)</option>
+                </select>
+              </div>
+
+              <div class="field-group">
+                <label for="bst-input">Value x</label>
+                <input type="text" id="bst-input" value="2" style="width: 110px;" placeholder="e.g. 2 or H" onkeydown="if(event.key==='Enter') runBSTSelectedFn()" />
+              </div>
+
+              <button class="btn btn-primary" onclick="runBSTSelectedFn()">Start Step-by-Step</button>
+            </div>
+
+            <div class="toolbar-inputs">
+              <div class="field-group">
+                <label for="bst-preset-select">Preset Tree</label>
+                <select id="bst-preset-select" onchange="handleBSTPresetChange(this.value)">
+                  <option value="book">Numbers [8,6,4,1,7,3,5]</option>
+                  <option value="chars">Letters ['M','F','S','B','H']</option>
+                  <option value="empty">EmptyTree</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step-by-Step Bar -->
+          <div class="stepper-bar">
+            <div class="stepper-controls">
+              <button class="btn btn-sm" id="bst-reset-btn" onclick="goToBSTStep(0)" disabled>&#x23EE; Reset</button>
+              <button class="btn btn-sm" id="bst-prev-btn" onclick="stepBST(-1)" disabled>&larr; Prev Step</button>
+              <button class="btn btn-sm btn-primary" id="bst-next-btn" onclick="stepBST(1)" disabled>Next Step &rarr;</button>
+            </div>
+            <span class="step-status-text" id="bst-status-msg">Select a function and click "Start Step-by-Step".</span>
+            <span class="step-counter" id="bst-step-counter">Idle</span>
+          </div>
+
+          <!-- Tree Visualization SVG -->
+          <div class="svg-box">
+            <svg id="bst-svg" viewBox="0 0 820 390" preserveAspectRatio="xMidYMid meet">
+              <g id="bst-edges-layer"></g>
+              <g id="bst-nodes-layer"></g>
+            </svg>
+          </div>
+
+          <!-- GHCi Output -->
+          <div class="ghci-box">
+            <div><span class="ghci-prompt">ghci&gt;</span> <span id="bst-ghci-cmd">tree</span></div>
+            <div class="ghci-output" id="bst-ghci-out"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         MODULE 2: CUSTOM RECURSIVE LIST (Code on Left, Visualization on Right)
+    ==================================================================== -->
+    <section class="module-panel" id="panel-list">
+      <div class="split-layout">
+        <!-- LEFT COLUMN: Haskell Code & Equational Trace -->
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Haskell Code</div>
+              <span class="badge">infixr 5</span>
+            </div>
+            <pre class="code-block">
+<span class="hl-line" id="list-ln-fix1"><span class="kw">infixr</span> <span class="num">5</span> <span class="op">:-:</span></span>
+<span class="hl-line" id="list-ln-data"><span class="kw">data</span> <span class="ty">List</span> a <span class="op">=</span> <span class="ty">Empty</span> <span class="op">|</span> a <span class="op">:-:</span> (<span class="ty">List</span> a)</span>
+<span class="hl-line">  <span class="kw">deriving</span> (<span class="ty">Show</span>, <span class="ty">Read</span>, <span class="ty">Eq</span>, <span class="ty">Ord</span>)</span>
+<div class="code-spacer"></div>
+<span class="hl-line" id="list-ln-fix2"><span class="kw">infixr</span> <span class="num">5</span> <span class="op">.++</span></span>
+<span class="hl-line" id="list-ln-sig"><span class="op">(.++)</span> <span class="op">::</span> <span class="ty">List</span> a <span class="op">-&gt;</span> <span class="ty">List</span> a <span class="op">-&gt;</span> <span class="ty">List</span> a</span>
+<span class="hl-line" id="list-ln-base"><span class="ty">Empty</span>      <span class="op">.++</span> ys <span class="op">=</span> ys</span>
+<span class="hl-line" id="list-ln-rec">(x <span class="op">:-:</span> xs) <span class="op">.++</span> ys <span class="op">=</span> x <span class="op">:-:</span> (xs <span class="op">.++</span> ys)</span>
+            </pre>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Step-by-Step Reduction Trace</div>
+              <span class="badge" id="list-phase-badge">Pattern Matching</span>
+            </div>
+            <div class="trace-stack" id="list-trace-stack"></div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Controls, Step-by-Step Bar, and Cons-Cell Visualization -->
+        <div class="card">
+          <div class="toolbar">
+            <div class="toolbar-inputs">
+              <div class="field-group">
+                <label for="list-xs-input">Left List (xs)</label>
+                <input type="text" id="list-xs-input" value="3, 4, 5" style="width: 150px;" placeholder="e.g. 3, 4, 5" />
+              </div>
+              <div class="field-group">
+                <label for="list-ys-input">Right List (ys)</label>
+                <input type="text" id="list-ys-input" value="6, 7" style="width: 140px;" placeholder="e.g. 6, 7" />
+              </div>
+              <button class="btn btn-primary" onclick="startListConcat()">Start Step-by-Step</button>
+            </div>
+
+            <div class="toolbar-inputs">
+              <div class="field-group">
+                <label for="list-preset-select">Preset Lists</label>
+                <select id="list-preset-select" onchange="handleListPresetChange(this.value)">
+                  <option value="book">Book Example: [3,4,5] .++ [6,7]</option>
+                  <option value="chars">Chars: ['A','B'] .++ ['C','D']</option>
+                  <option value="empty">Base Case: Empty .++ [10,20]</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step-by-Step Bar -->
+          <div class="stepper-bar">
+            <div class="stepper-controls">
+              <button class="btn btn-sm" id="list-reset-btn" onclick="goToListStep(0)">&#x23EE; Reset</button>
+              <button class="btn btn-sm" id="list-prev-btn" onclick="stepList(-1)">&larr; Prev Step</button>
+              <button class="btn btn-sm btn-primary" id="list-next-btn" onclick="stepList(1)">Next Step &rarr;</button>
+            </div>
+            <span class="step-status-text" id="list-status-msg">Ready to step through xs .++ ys</span>
+            <span class="step-counter" id="list-step-counter">Step 1 / 1</span>
+          </div>
+
+          <!-- Visual Cons Cells -->
+          <div class="list-stage">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <div class="list-row-label">Left List <code>xs</code> (Deconstructed via Pattern Match)</div>
+                <div class="cons-chain" id="list-xs-visual"></div>
+              </div>
+              <div>
+                <div class="list-row-label">Right List <code>ys</code> (Reused Directly at Base Case)</div>
+                <div class="cons-chain" id="list-ys-visual"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="list-row-label">Current Step Evaluation State</div>
+              <div class="cons-chain" id="list-active-visual" style="min-height: 64px; background: var(--bg-subtle);"></div>
+            </div>
+          </div>
+
+          <!-- GHCi Output -->
+          <div class="ghci-box">
+            <div><span class="ghci-prompt">ghci&gt;</span> <span id="list-ghci-cmd"></span></div>
+            <div class="ghci-output" id="list-ghci-out"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    /* =========================================================================
+       MODULE SELECTION DROPDOWN
+    ========================================================================= */
+    const TITLES = {
+      bst: 'Binary Search Tree (Tree a)',
+      list: 'Custom Recursive List (List a)'
+    };
+
+    function switchModule(mod) {
+      document.getElementById('page-title').textContent = TITLES[mod];
+      document.getElementById('panel-bst').classList.toggle('active', mod === 'bst');
+      document.getElementById('panel-list').classList.toggle('active', mod === 'list');
+    }
+
+    /* =========================================================================
+       MODULE 1: BINARY SEARCH TREE (STEP-BY-STEP ONLY)
+    ========================================================================= */
+    let bstCommittedRoot = null;
+    let bstDataType = 'number';
+    let bstSteps = [];
+    let bstStepIdx = -1;
+
+    function cloneTree(node) {
+      if (!node) return null;
+      return { val: node.val, left: cloneTree(node.left), right: cloneTree(node.right) };
+    }
+
+    function insertPure(node, val) {
+      if (!node) return { val, left: null, right: null };
+      if (val === node.val) return { val: node.val, left: cloneTree(node.left), right: cloneTree(node.right) };
+      if (val < node.val) return { val: node.val, left: insertPure(node.left, val), right: cloneTree(node.right) };
+      return { val: node.val, left: cloneTree(node.left), right: insertPure(node.right, val) };
+    }
+
+    function fmtVal(v) {
+      return typeof v === 'string' ? `'${v}'` : String(v);
+    }
+
+    function treeToADTString(node) {
+      if (!node) return 'EmptyTree';
+      const l = treeToADTString(node.left);
+      const r = treeToADTString(node.right);
+      const lStr = node.left ? `(${l})` : l;
+      const rStr = node.right ? `(${r})` : r;
+      return `Node ${fmtVal(node.val)} ${lStr} ${rStr}`;
+    }
+
+    function highlightBSTLine(lineId, isDone = false) {
+      document.querySelectorAll('#panel-bst .hl-line').forEach(el => {
+        el.classList.remove('active-step', 'done-step');
+        if (el.id === lineId) {
+          el.classList.add(isDone ? 'done-step' : 'active-step');
+        }
+      });
+    }
+
+    function parseBSTInput() {
+      const raw = document.getElementById('bst-input').value.trim();
+      if (!raw) return null;
+      const num = Number(raw);
+      if (!isNaN(num)) {
+        if (bstCommittedRoot !== null && bstDataType !== 'number') bstCommittedRoot = null;
+        bstDataType = 'number';
+        document.getElementById('bst-type-badge').textContent = 'Ord Int';
+        return num;
+      } else {
+        const ch = raw[0].toUpperCase();
+        if (bstCommittedRoot !== null && bstDataType !== 'string') bstCommittedRoot = null;
+        bstDataType = 'string';
+        document.getElementById('bst-type-badge').textContent = 'Ord Char';
+        return ch;
+      }
+    }
+
+    function buildBSTInsertSteps(initialTree, val) {
+      const steps = [];
+      let curr = initialTree;
+      let path = 'root';
+      const visitedEdges = [];
+
+      while (true) {
+        if (!curr) {
+          steps.push({
+            tree: cloneTree(initialTree),
+            activePath: path,
+            visitedEdges: [...visitedEdges],
+            status: 'visiting',
+            lineId: 'bst-ln-ins-empty',
+            msg: `Base case: treeInsert ${fmtVal(val)} EmptyTree = singleton ${fmtVal(val)}`
+          });
+          const updatedTree = insertPure(initialTree, val);
+          steps.push({
+            tree: updatedTree,
+            activePath: path,
+            visitedEdges: [...visitedEdges],
+            status: 'new',
+            lineId: 'bst-ln-singleton-body',
+            isDone: true,
+            msg: `Inserted Node ${fmtVal(val)} EmptyTree EmptyTree`
+          });
+          break;
+        }
+
+        steps.push({
+          tree: cloneTree(initialTree),
+          activePath: path,
+          visitedEdges: [...visitedEdges],
+          status: 'visiting',
+          lineId: 'bst-ln-ins-node',
+          msg: `Pattern match: treeInsert ${fmtVal(val)} (Node ${fmtVal(curr.val)} left right)`
+        });
+
+        if (val === curr.val) {
+          steps.push({
+            tree: cloneTree(initialTree),
+            activePath: path,
+            visitedEdges: [...visitedEdges],
+            status: 'found',
+            found: true,
+            lineId: 'bst-ln-ins-eq',
+            isDone: true,
+            msg: `${fmtVal(val)} == ${fmtVal(curr.val)} -> Returns unchanged Node ${fmtVal(val)}`
+          });
+          break;
+        } else if (val < curr.val) {
+          steps.push({
+            tree: cloneTree(initialTree),
+            activePath: path,
+            visitedEdges: [...visitedEdges, path + 'L'],
+            status: 'visiting',
+            lineId: 'bst-ln-ins-lt',
+            msg: `${fmtVal(val)} < ${fmtVal(curr.val)} -> Branch LEFT: treeInsert ${fmtVal(val)} left`
+          });
+          path += 'L';
+          visitedEdges.push(path);
+          curr = curr.left;
+        } else {
+          steps.push({
+            tree: cloneTree(initialTree),
+            activePath: path,
+            visitedEdges: [...visitedEdges, path + 'R'],
+            status: 'visiting',
+            lineId: 'bst-ln-ins-gt',
+            msg: `${fmtVal(val)} > ${fmtVal(curr.val)} -> Branch RIGHT: treeInsert ${fmtVal(val)} right`
+          });
+          path += 'R';
+          visitedEdges.push(path);
+          curr = curr.right;
+        }
+      }
+      return steps;
+    }
+
+    function buildBSTElemSteps(tree, val) {
+      const steps = [];
+      let curr = tree;
+      let path = 'root';
+      const visitedEdges = [];
+
+      while (true) {
+        if (!curr) {
+          steps.push({
+            tree: cloneTree(tree),
+            activePath: path,
+            visitedEdges: [...visitedEdges],
+            status: 'notfound',
+            lineId: 'bst-ln-elem-empty',
+            isDone: true,
+            ghciResult: `False`,
+            msg: `Base case: treeElem ${fmtVal(val)} EmptyTree = False`
+          });
+          break;
+        }
+
+        steps.push({
+          tree: cloneTree(tree),
+          activePath: path,
+          visitedEdges: [...visitedEdges],
+          status: 'visiting',
+          lineId: 'bst-ln-elem-node',
+          msg: `Pattern match: treeElem ${fmtVal(val)} (Node ${fmtVal(curr.val)} left right)`
+        });
+
+        if (val === curr.val) {
+          steps.push({
+            tree: cloneTree(tree),
+            activePath: path,
+            visitedEdges: [...visitedEdges],
+            status: 'found',
+            found: true,
+            lineId: 'bst-ln-elem-eq',
+            isDone: true,
+            ghciResult: `True`,
+            msg: `${fmtVal(val)} == ${fmtVal(curr.val)} -> Found! Returns True`
+          });
+          break;
+        } else if (val < curr.val) {
+          steps.push({
+            tree: cloneTree(tree),
+            activePath: path,
+            visitedEdges: [...visitedEdges, path + 'L'],
+            status: 'visiting',
+            lineId: 'bst-ln-elem-lt',
+            msg: `${fmtVal(val)} < ${fmtVal(curr.val)} -> Search LEFT: treeElem ${fmtVal(val)} left`
+          });
+          path += 'L';
+          visitedEdges.push(path);
+          curr = curr.left;
+        } else {
+          steps.push({
+            tree: cloneTree(tree),
+            activePath: path,
+            visitedEdges: [...visitedEdges, path + 'R'],
+            status: 'visiting',
+            lineId: 'bst-ln-elem-gt',
+            msg: `${fmtVal(val)} > ${fmtVal(curr.val)} -> Search RIGHT: treeElem ${fmtVal(val)} right`
+          });
+          path += 'R';
+          visitedEdges.push(path);
+          curr = curr.right;
+        }
+      }
+      return steps;
+    }
+
+    function updateBSTFunctionView() {
+      const fnMode = document.getElementById('bst-fn-select').value;
+      const isInsert = fnMode === 'insert';
+      document.getElementById('bst-code-insert-group').style.display = isInsert ? 'block' : 'none';
+      document.getElementById('bst-code-elem-group').style.display = isInsert ? 'none' : 'block';
+      document.getElementById('bst-code-title').textContent = isInsert
+        ? 'Haskell Code — treeInsert'
+        : 'Haskell Code — treeElem';
+      highlightBSTLine(null);
+    }
+
+    function runBSTSelectedFn() {
+      updateBSTFunctionView();
+      const fnMode = document.getElementById('bst-fn-select').value;
+      const val = parseBSTInput();
+      if (val === null) return;
+
+      if (fnMode === 'insert') {
+        document.getElementById('bst-ghci-cmd').textContent = `treeInsert ${fmtVal(val)} tree`;
+        bstSteps = buildBSTInsertSteps(bstCommittedRoot, val);
+        bstCommittedRoot = cloneTree(bstSteps[bstSteps.length - 1].tree);
+      } else {
+        document.getElementById('bst-ghci-cmd').textContent = `treeElem ${fmtVal(val)} tree`;
+        bstSteps = buildBSTElemSteps(bstCommittedRoot, val);
+      }
+
+      bstStepIdx = 0;
+      applyBSTStep();
+    }
+
+    function stepBST(delta) {
+      if (!bstSteps.length) return;
+      bstStepIdx = Math.max(0, Math.min(bstSteps.length - 1, bstStepIdx + delta));
+      applyBSTStep();
+    }
+
+    function goToBSTStep(idx) {
+      if (!bstSteps.length) return;
+      bstStepIdx = Math.max(0, Math.min(bstSteps.length - 1, idx));
+      applyBSTStep();
+    }
+
+    function applyBSTStep() {
+      const step = bstSteps[bstStepIdx];
+      if (!step) return;
+
+      document.getElementById('bst-status-msg').textContent = step.msg;
+      highlightBSTLine(step.lineId, step.isDone);
+      renderBSTCanvas(step.tree, step);
+
+      if (step.ghciResult) {
+        document.getElementById('bst-ghci-out').textContent = step.ghciResult;
+      } else {
+        document.getElementById('bst-ghci-out').textContent = treeToADTString(step.tree);
+      }
+
+      document.getElementById('bst-reset-btn').disabled = bstStepIdx <= 0;
+      document.getElementById('bst-prev-btn').disabled = bstStepIdx <= 0;
+      document.getElementById('bst-next-btn').disabled = bstStepIdx >= bstSteps.length - 1;
+      document.getElementById('bst-step-counter').textContent = `Step ${bstStepIdx + 1} / ${bstSteps.length}`;
+    }
+
+    function renderBSTCanvas(treeToRender, state = {}) {
+      const edgesLayer = document.getElementById('bst-edges-layer');
+      const nodesLayer = document.getElementById('bst-nodes-layer');
+      edgesLayer.innerHTML = '';
+      nodesLayer.innerHTML = '';
+
+      const nodesList = [];
+      const edgesList = [];
+
+      function traverse(node, depth, x, spread, pathId) {
+        const y = 42 + depth * 70;
+        if (!node) {
+          if (depth <= 4) {
+            nodesList.push({ isEmpty: true, x, y, pathId });
+          }
+          return;
+        }
+        nodesList.push({ isEmpty: false, val: node.val, x, y, pathId });
+
+        const nextSpread = Math.max(spread * 0.5, 26);
+        if (depth < 4) {
+          const lx = x - spread;
+          const rx = x + spread;
+          const ly = 42 + (depth + 1) * 70;
+          edgesList.push({ x1: x, y1: y, x2: lx, y2: ly, targetPath: pathId + 'L' });
+          edgesList.push({ x1: x, y1: y, x2: rx, y2: ly, targetPath: pathId + 'R' });
+          traverse(node.left, depth + 1, lx, nextSpread, pathId + 'L');
+          traverse(node.right, depth + 1, rx, nextSpread, pathId + 'R');
+        }
+      }
+
+      traverse(treeToRender, 0, 410, 185, 'root');
+
+      edgesList.forEach(edge => {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', edge.x1);
+        line.setAttribute('y1', edge.y1);
+        line.setAttribute('x2', edge.x2);
+        line.setAttribute('y2', edge.y2);
+        let cls = 'tree-edge';
+        if (state.visitedEdges && state.visitedEdges.includes(edge.targetPath)) {
+          cls += state.found ? ' edge-found' : ' edge-active';
+        }
+        line.setAttribute('class', cls);
+        edgesLayer.appendChild(line);
+      });
+
+      nodesList.forEach(n => {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${n.x}, ${n.y})`);
+        let cls = 'tree-node-group';
+        if (state.activePath === n.pathId) {
+          if (state.status === 'found') cls += ' node-found';
+          else if (state.status === 'new') cls += ' node-new';
+          else if (state.status === 'notfound') cls += ' node-notfound';
+          else cls += ' node-visiting';
+        }
+        g.setAttribute('class', cls);
+
+        if (n.isEmpty) {
+          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          rect.setAttribute('x', -24);
+          rect.setAttribute('y', -11);
+          rect.setAttribute('width', 48);
+          rect.setAttribute('height', 22);
+          rect.setAttribute('class', 'tree-empty-rect');
+          const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          txt.setAttribute('class', 'tree-empty-text');
+          txt.textContent = 'Empty';
+          g.appendChild(rect);
+          g.appendChild(txt);
+        } else {
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('r', 20);
+          circle.setAttribute('class', 'tree-node-circle');
+          const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          txt.setAttribute('class', 'tree-node-text');
+          txt.textContent = fmtVal(n.val);
+          g.onclick = () => {
+            document.getElementById('bst-fn-select').value = 'elem';
+            document.getElementById('bst-input').value = n.val;
+            runBSTSelectedFn();
+          };
+          g.appendChild(circle);
+          g.appendChild(txt);
+        }
+        nodesLayer.appendChild(g);
+      });
+    }
+
+    function handleBSTPresetChange(preset) {
+      bstCommittedRoot = null;
+      bstSteps = [];
+      bstStepIdx = -1;
+      highlightBSTLine(null);
+
+      if (preset === 'book') {
+        bstDataType = 'number';
+        document.getElementById('bst-type-badge').textContent = 'Ord Int';
+        [5, 3, 7, 1, 4, 6, 8].forEach(n => { bstCommittedRoot = insertPure(bstCommittedRoot, n); });
+        document.getElementById('bst-input').value = '2';
+        document.getElementById('bst-status-msg').textContent = 'Loaded Book Tree. Click "Start Step-by-Step" to trace!';
+        document.getElementById('bst-ghci-cmd').textContent = 'foldr treeInsert EmptyTree [8,6,4,1,7,3,5]';
+      } else if (preset === 'chars') {
+        bstDataType = 'string';
+        document.getElementById('bst-type-badge').textContent = 'Ord Char';
+        ['M', 'F', 'S', 'B', 'H', 'P', 'W'].forEach(c => { bstCommittedRoot = insertPure(bstCommittedRoot, c); });
+        document.getElementById('bst-input').value = 'H';
+        document.getElementById('bst-status-msg').textContent = 'Loaded Char Tree. Click "Start Step-by-Step" to trace!';
+        document.getElementById('bst-ghci-cmd').textContent = 'charTree';
+      } else {
+        document.getElementById('bst-input').value = '5';
+        document.getElementById('bst-status-msg').textContent = 'Reset to EmptyTree.';
+        document.getElementById('bst-ghci-cmd').textContent = 'EmptyTree';
+      }
+
+      document.getElementById('bst-ghci-out').textContent = treeToADTString(bstCommittedRoot);
+      document.getElementById('bst-reset-btn').disabled = true;
+      document.getElementById('bst-prev-btn').disabled = true;
+      document.getElementById('bst-next-btn').disabled = true;
+      document.getElementById('bst-step-counter').textContent = 'Ready';
+      renderBSTCanvas(bstCommittedRoot);
+    }
+
+    /* =========================================================================
+       MODULE 2: CUSTOM RECURSIVE LIST (STEP-BY-STEP ONLY)
+    ========================================================================= */
+    let listSteps = [];
+    let listStepIdx = 0;
+
+    function parseListItems(str) {
+      return str
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
+
+    function formatHaskellList(items, explicitParens = false) {
+      if (items.length === 0) return 'Empty';
+      if (!explicitParens) {
+        return items.join(' :-: ') + ' :-: Empty';
+      }
+      let acc = `${items[items.length - 1]} :-: Empty`;
+      for (let i = items.length - 2; i >= 0; i--) {
+        acc = `${items[i]} :-: (${acc})`;
+      }
+      return acc;
+    }
+
+    function renderConsChainHTML(items, opts = {}) {
+      const { rightStyle = false, activeIdx = -1 } = opts;
+      if (items.length === 0) {
+        return `<span class="empty-node${opts.emptyActive ? ' empty-active' : ''}">Empty</span>`;
+      }
+      let html = '';
+      items.forEach((val, idx) => {
+        let cls = 'cons-cell';
+        if (rightStyle) cls += ' cell-right-list';
+        if (idx === activeIdx) cls += ' cell-active';
+        html += `
+          <div class="${cls}">
+            <span class="cons-val">${val}</span>
+            <span class="cons-op">:-:</span>
+          </div>
+          <span class="cons-arrow">&rarr;</span>
+        `;
+      });
+      html += `<span class="empty-node${opts.emptyActive ? ' empty-active' : ''}">Empty</span>`;
+      return html;
+    }
+
+    function buildActiveEvalVisual(prefixItems, remainingXs, ysItems, phase) {
+      let html = '';
+      prefixItems.forEach((val) => {
+        const isResolved = phase === 'done';
+        html += `
+          <div class="cons-cell${isResolved ? ' cell-resolved' : ''}">
+            <span class="cons-val">${val}</span>
+            <span class="cons-op">:-:</span>
+          </div>
+          <span class="cons-arrow">(</span>
+        `;
+      });
+
+      if (phase === 'recurse') {
+        const remStr = formatHaskellList(remainingXs);
+        const ysStr = formatHaskellList(ysItems);
+        html += `<div class="unexpressed-box">(${remStr}) .++ (${ysStr})</div>`;
+      } else {
+        ysItems.forEach(val => {
+          html += `
+            <div class="cons-cell ${phase === 'done' ? 'cell-resolved' : 'cell-right-list'}">
+              <span class="cons-val">${val}</span>
+              <span class="cons-op">:-:</span>
+            </div>
+            <span class="cons-arrow">&rarr;</span>
+          `;
+        });
+        html += `<span class="empty-node">Empty</span>`;
+      }
+
+      for (let i = 0; i < prefixItems.length; i++) {
+        html += `<span class="cons-arrow">)</span>`;
+      }
+      return html;
+    }
+
+    function generateListConcatSteps(xs, ys) {
+      const steps = [];
+      const ysStr = `(${formatHaskellList(ys)})`;
+
+      steps.push({
+        phase: 'recurse',
+        badge: 'Initial Call',
+        lineId: 'list-ln-sig',
+        activeLeftIdx: 0,
+        emptyActive: xs.length === 0,
+        prefix: [],
+        remainingXs: [...xs],
+        ys: [...ys],
+        expr: `(${formatHaskellList(xs)}) .++ ${ysStr}`,
+        msg: `Initial expression: evaluating xs .++ ys.`
+      });
+
+      for (let i = 0; i < xs.length; i++) {
+        const prefix = xs.slice(0, i + 1);
+        const rem = xs.slice(i + 1);
+        const openPrefix = prefix.map(v => `${v} :-: (`).join('');
+        const closeParens = ')'.repeat(prefix.length);
+
+        steps.push({
+          phase: 'recurse',
+          badge: `Pattern Match #${i + 1}`,
+          lineId: 'list-ln-rec',
+          activeLeftIdx: i,
+          emptyActive: false,
+          prefix,
+          remainingXs: rem,
+          ys: [...ys],
+          expr: `${openPrefix}(${formatHaskellList(rem)}) .++ ${ysStr}${closeParens}`,
+          msg: `Matched (${xs[i]} :-: xs) .++ ys  ==>  ${xs[i]} :-: ((${formatHaskellList(rem)}) .++ ys)`
+        });
+      }
+
+      const allOpen = xs.map(v => `${v} :-: (`).join('');
+      const allClose = ')'.repeat(xs.length);
+      steps.push({
+        phase: 'base',
+        badge: 'Base Case (Empty)',
+        lineId: 'list-ln-base',
+        activeLeftIdx: -1,
+        emptyActive: true,
+        prefix: [...xs],
+        remainingXs: [],
+        ys: [...ys],
+        expr: `${allOpen}${formatHaskellList(ys)}${allClose}`,
+        msg: `Base case: Empty .++ ys = ys (ys is attached directly without traversal).`
+      });
+
+      const combined = [...xs, ...ys];
+      steps.push({
+        phase: 'done',
+        badge: 'Result (infixr 5 :-:)',
+        lineId: 'list-ln-data',
+        isDone: true,
+        activeLeftIdx: -1,
+        emptyActive: false,
+        prefix: [...xs],
+        remainingXs: [],
+        ys: [...ys],
+        expr: formatHaskellList(combined, true),
+        msg: `Complete: ${formatHaskellList(combined)}`
+      });
+
+      return steps;
+    }
+
+    function startListConcat() {
+      const xs = parseListItems(document.getElementById('list-xs-input').value);
+      const ys = parseListItems(document.getElementById('list-ys-input').value);
+
+      listSteps = generateListConcatSteps(xs, ys);
+      listStepIdx = 0;
+
+      const combined = [...xs, ...ys];
+      document.getElementById('list-ghci-cmd').textContent =
+        `(${formatHaskellList(xs)}) .++ (${formatHaskellList(ys)})`;
+      document.getElementById('list-ghci-out').textContent =
+        formatHaskellList(combined, true);
+
+      renderListStep();
+    }
+
+    function stepList(delta) {
+      if (!listSteps.length) return;
+      listStepIdx = Math.max(0, Math.min(listSteps.length - 1, listStepIdx + delta));
+      renderListStep();
+    }
+
+    function goToListStep(idx) {
+      if (!listSteps.length) return;
+      listStepIdx = Math.max(0, Math.min(listSteps.length - 1, idx));
+      renderListStep();
+    }
+
+    function highlightListLine(lineId, isDone = false) {
+      document.querySelectorAll('#panel-list .hl-line').forEach(el => {
+        el.classList.remove('active-step', 'done-step');
+        if (el.id === lineId) {
+          el.classList.add(isDone ? 'done-step' : 'active-step');
+        }
+      });
+    }
+
+    function renderListStep() {
+      const step = listSteps[listStepIdx];
+      if (!step) return;
+
+      const xs = parseListItems(document.getElementById('list-xs-input').value);
+      const ys = parseListItems(document.getElementById('list-ys-input').value);
+
+      document.getElementById('list-status-msg').textContent = step.msg;
+      document.getElementById('list-phase-badge').textContent = step.badge;
+      highlightListLine(step.lineId, step.isDone);
+
+      document.getElementById('list-xs-visual').innerHTML = renderConsChainHTML(xs, {
+        activeIdx: step.activeLeftIdx,
+        emptyActive: step.emptyActive
+      });
+      document.getElementById('list-ys-visual').innerHTML = renderConsChainHTML(ys, {
+        rightStyle: true
+      });
+
+      document.getElementById('list-active-visual').innerHTML = buildActiveEvalVisual(
+        step.prefix,
+        step.remainingXs,
+        step.ys,
+        step.phase
+      );
+
+      const traceContainer = document.getElementById('list-trace-stack');
+      traceContainer.innerHTML = '';
+      listSteps.forEach((s, idx) => {
+        const row = document.createElement('div');
+        let cls = 'trace-row';
+        if (idx === listStepIdx) {
+          cls += s.isDone ? ' completed' : ' current';
+        } else if (idx < listStepIdx) {
+          cls += ' completed';
+        }
+        row.className = cls;
+        row.onclick = () => goToListStep(idx);
+        row.innerHTML = `
+          <span>${idx === 0 ? '   ' : '=  '}${s.expr}</span>
+          <span class="trace-badge">${s.badge}</span>
+        `;
+        traceContainer.appendChild(row);
+      });
+
+      document.getElementById('list-reset-btn').disabled = listStepIdx <= 0;
+      document.getElementById('list-prev-btn').disabled = listStepIdx <= 0;
+      document.getElementById('list-next-btn').disabled = listStepIdx >= listSteps.length - 1;
+      document.getElementById('list-step-counter').textContent = `Step ${listStepIdx + 1} / ${listSteps.length}`;
+    }
+
+    function handleListPresetChange(preset) {
+      if (preset === 'book') {
+        document.getElementById('list-xs-input').value = '3, 4, 5';
+        document.getElementById('list-ys-input').value = '6, 7';
+      } else if (preset === 'chars') {
+        document.getElementById('list-xs-input').value = "'A', 'B'";
+        document.getElementById('list-ys-input').value = "'C', 'D'";
+      } else {
+        document.getElementById('list-xs-input').value = '';
+        document.getElementById('list-ys-input').value = '10, 20';
+      }
+      startListConcat();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      handleBSTPresetChange('book');
+      startListConcat();
+    });
+  </script>
+</body>
+</html>
